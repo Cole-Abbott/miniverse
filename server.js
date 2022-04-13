@@ -7,7 +7,7 @@ const envConfig = require("dotenv").config();
 const {ABLY_API_KEY, PORT} = process.env;
 
 
-const TICK_LENGTH = 100
+const TICK_LENGTH = 200
 
 // instantiate to Ably, echo false so sever will not recive its own messages
 const realtime = new Ably.Realtime({
@@ -37,7 +37,7 @@ app.get("/auth", (request, response) => {
     }
   });
 });
-
+///workspaces/71832242/miniverse/site/sprites/index.html
 // main site
 app.get("/", (request, response) => {
     response.header("Access-Control-Allow-Origin", "*");
@@ -58,7 +58,7 @@ const listener = app.listen(PORT, () => {
 // wait until connection with Ably is established
 realtime.connection.once("connected", () => {
   channel = realtime.channels.get('test');
-  
+
   channel.subscribe('position', function(message) {
     console.log(message.data);
   });
@@ -66,58 +66,80 @@ realtime.connection.once("connected", () => {
   //start game loop to send out data
   setInterval(tick, TICK_LENGTH)
 
+
   //subscribe to input channel
   channel.subscribe("input", input)
 
+  players = []
+  channel.subscribe("join", (message) => {
+    players.push(new player(message.data))
+
+  })
+
 });
 
-player = {
-  x: 100,
-  y: 100,
-  velocityX: 0,
-  velocityY: 0
+class player {
+  constructor(id) {
+    this.playerID = id;
+    this.x = 100
+    this.y = 100
+    this.velocityX = 0
+    this.velocityY = 0
+}
+
 }
 
 function tick() {
-  channel.publish("position", player)
+  channel.publish("position", players)
   update()
 }
 
 function input(message) {
   const data = message.data
+  for (let player in players) {
+    if (players[player].playerID === data.playerID) {
+      console.log(players[player])
+      if (data.key === 'right') {
+        if (data.status) {
+          players[player].velocityX = 10
+        } else {
+          players[player].velocityX = 0
+        }
+      }
+      else if (data.key === 'left') {
+        if (data.status) {
+          players[player].velocityX = -10
+        } else {
+          players[player].velocityX = 0
+        }
+      }
+      else if (data.key === 'down') {
+        if (data.status) {
+          players[player].velocityY = 10
+        } else {
+          players[player].velocityY = 0
+        }
+      }
+      else if (data.key === 'up') {
+        if (data.status) {
+          players[player].velocityY = -10
+        } else {
+          players[player].velocityY = 0
+        }
+      }
+    }
+  }
 
-  if (data.key === 'right'){
-    if (data.status) {
-      player.velocityX = 10
-    } else {
-      player.velocityX = 0
-    }
-  }
-  else if (data.key === 'left'){
-    if (data.status) {
-      player.velocityX = -10
-    } else {
-      player.velocityX = 0
-    }
-  }
-  else if (data.key === 'down'){
-    if (data.status) {
-      player.velocityY = 10
-    } else {
-      player.velocityY = 0
-    }
-  }
-  else if (data.key === 'up'){
-    if (data.status) {
-      player.velocityY = -10
-    } else {
-      player.velocityY = 0
-    }
-  }
 
 }
 
 function update() {
-  player.x += player.velocityX
-  player.y += player.velocityY
+  for (let player in players) {
+    players[player].x += players[player].velocityX
+    players[player].y += players[player].velocityY
+    if (players[player].x < 0) { players[player].x = 0}
+    if (players[player].x > 800) { players[player].x = 800}
+    if (players[player].y < 0) { players[player].y = 0}
+    if (players[player].y > 600) { players[player].y = 600}
+  }
 }
