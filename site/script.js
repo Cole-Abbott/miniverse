@@ -40,7 +40,7 @@ function create() {
     player.setDrag(0.6)
     player.setDamping(true)
     player.setCollideWorldBounds(true);
-    player.showDebugVelocity(true);
+    player.showDebugVelocity = true;
 
     cursorKeys = this.input.keyboard.addKeys({
         'up': Phaser.Input.Keyboard.KeyCodes.W,
