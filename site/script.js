@@ -21,7 +21,7 @@ function preload() {
     this.load.image("player", "./sprites/player.png")
 }
 
-function create() { 
+function create() {
     //add background
     this.add.image(0, 0, 'grass_1');
     this.add.image(128, 0, 'grass_1');
@@ -31,30 +31,31 @@ function create() {
     this.add.image(384, 256, 'road_1');
     this.add.image(384, 384, 'road_1');
     this.add.image(384, 512, 'road_1');
-    
 
-    //add/config player 
+
+    //add/config player
     player = this.physics.add.sprite(100, 100, 'player');
+    otherPlayers = this.physics.add.sprite(100, 100, 'player');
     player.setBounce(0.2);
     player.setDrag(0.6)
     player.setDamping(true)
     player.setCollideWorldBounds(true);
+    player.showDebugVelocity(true);
 
-    cursorKeys = this.input.keyboard.addKeys({ 
-        'up': Phaser.Input.Keyboard.KeyCodes.W, 
-        'down': Phaser.Input.Keyboard.KeyCodes.S, 
-        'left': Phaser.Input.Keyboard.KeyCodes.A, 
+    cursorKeys = this.input.keyboard.addKeys({
+        'up': Phaser.Input.Keyboard.KeyCodes.W,
+        'down': Phaser.Input.Keyboard.KeyCodes.S,
+        'left': Phaser.Input.Keyboard.KeyCodes.A,
         'right': Phaser.Input.Keyboard.KeyCodes.D
     });
 }
 
 function update() {
-    
-
 
     for (let key in cursorKeys) {
         if(Phaser.Input.Keyboard.JustDown(cursorKeys[key])){
             message = {
+                playerID: myClientId,
                 key: key,
                 status: true
             }
@@ -63,6 +64,7 @@ function update() {
         }
         if(Phaser.Input.Keyboard.JustUp(cursorKeys[key])){
             message = {
+                playerID: myClientId,
                 key: key,
                 status: false
             }
@@ -70,7 +72,7 @@ function update() {
             console.log(message)
         }
     }
-    
+
 }
 
 function connect() {
@@ -87,12 +89,24 @@ function connect() {
         channel = realtime.channels.get('test');
 
         channel.subscribe('position', move)
+        channel.publish("join", myClientId)
     })
 }
 
 function move(message) {
+    for (let i in message.data) {
+        if (message.data[i].playerID === myClientId) {
+            data = message.data[i]
+            player.x = data.x
+            player.y = data.y
+            player.setVelocity(data.velocityX * 2, data.velocityY * 2)
+        } else {
+            data = message.data[i]
+            otherPlayers.x = data.x
+            otherPlayers.y = data.y
+        }
+    }
+
     //moves player to where the server says it should be
-    data = message.data
-    player.x = data.x
-    player.y = data.y
+
 }
