@@ -7,7 +7,7 @@ to host localy, clone the repo
 git clone https://github.com/Cole-Abbott/miniverse.git
 
 ```
-install the depenancies
+install the dependencies
 ```
 npm install
 ```
