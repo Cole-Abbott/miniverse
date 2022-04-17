@@ -6,10 +6,26 @@
 <body>
 
     <script src="./script.js"></script>
-    <script
-        lang="text/javascript"
-        src="https://cdn.ably.io/lib/ably.min-1.js"
-    ></script>
+    
+   
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+      // NOTE - INCLUDE YOUR FIREBASE CONFIG HERE FOR ANYTHING TO WORK:
+      const firebaseConfig = {
+      apiKey: "AIzaSyC_DliS38QfCXwY8D5X0U2VCzS5vSArrRQ",
+      authDomain: "miniverse-105ac.firebaseapp.com",
+      databaseURL: "https://miniverse-105ac-default-rtdb.firebaseio.com",
+      projectId: "miniverse-105ac",
+      storageBucket: "miniverse-105ac.appspot.com",
+      messagingSenderId: "255815270517",
+      appId: "1:255815270517:web:7f804d513735df493f783c",
+      measurementId: "G-4VPHWRTMYW"
+    };
+      firebase.initializeApp(firebaseConfig);
+    </script>
+
 
 </body>
 </html>

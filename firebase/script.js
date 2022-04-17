@@ -1,23 +1,3 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyC_DliS38QfCXwY8D5X0U2VCzS5vSArrRQ",
-  authDomain: "miniverse-105ac.firebaseapp.com",
-  databaseURL: "https://miniverse-105ac-default-rtdb.firebaseio.com",
-  projectId: "miniverse-105ac",
-  storageBucket: "miniverse-105ac.appspot.com",
-  messagingSenderId: "255815270517",
-  appId: "1:255815270517:web:7f804d513735df493f783c",
-  measurementId: "G-4VPHWRTMYW"
-};
-
-// Initialize Firebase
-const firebase = initializeApp(firebaseConfig);
 
 var config = {
     type: Phaser.AUTO,
@@ -36,7 +16,8 @@ var config = {
 var game = new Phaser.Game(config);
 
 function preload() {
-    const {} = connect()
+    const {playerID, playerRef} = connect()
+    console.log(playerID)
     this.load.image("grass_1", "./sprites/grass_1.png")
     this.load.image("road_1", "./sprites/road_1.png")
     this.load.image("player", "./sprites/player.png")
@@ -78,14 +59,15 @@ function update(){
 
 function connect() {
     //connect to firebse
-
+    let playerID, playerRef
+    
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             //logged in
             console.log(user)
 
-            const playerID = user.uid
-            const playerRef = firebase.database().ref(`players/${playerID}`)
+            playerID = user.uid
+            playerRef = firebase.database().ref(`players/${playerID}`)
 
             playerRef.set({
                 playerID,
@@ -93,6 +75,9 @@ function connect() {
                 y: 100,
                 name: "cole"
             })
+            //Remove me from Firebase when I diconnect
+            playerRef.onDisconnect().remove();
+
         } else {
             //not logged it
             console.log("Not logged in")
