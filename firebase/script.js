@@ -25,22 +25,19 @@ function preload() {
     //array of phaser objects for each player, key is player ID
     allPlayers = {}
 
-
+    //runs whenever players is updated
     allPlayerRef.on("value", (snapshot) =>{
-        //update allPlayers array position
         data = snapshot.val()
-
+        //moves all players to new position
         for (let key in data) {
             if (key != playerID) {
-                //allPlayers[key].x = data[key].x
-                //allPlayers[key].y = data[key].y
                 move(allPlayers[key], data[key].x, data[key].y)
             }
         }
     })
 
+    //runs whenever a new player joins
     allPlayerRef.on("child_added", (snapshot) =>{
-        //add new player
         const data = snapshot.val()
 
         if (data.playerID != playerID) {
@@ -49,11 +46,13 @@ function preload() {
         }
     })
 
+    //runs whenever a player leaves, deletes player from game
     allPlayerRef.on("child_removed", (snapshot) =>{
         removedID = snapshot.val().playerID
         allPlayers[removedID].destroy()
     })
     
+    //load sprites
     this.load.image("grass_1", "./sprites/grass_1.png")
     this.load.image("road_1", "./sprites/road_1.png")
     this.load.image("player", "./sprites/player.png")
@@ -77,12 +76,16 @@ function create() {
     player.setBounce(0.2);
     player.setCollideWorldBounds(true);
 
-    cursorKeys = this.input.keyboard.addKeys({
+    movementKeys = this.input.keyboard.addKeys({
         'up': Phaser.Input.Keyboard.KeyCodes.W,
         'down': Phaser.Input.Keyboard.KeyCodes.S,
         'left': Phaser.Input.Keyboard.KeyCodes.A,
         'right': Phaser.Input.Keyboard.KeyCodes.D
+        
     });
+    actionKeys = this.input.keyboard.addKeys({
+        'space': Phaser.Input.Keyboard.KeyCodes.SPACE
+    })
 }
 
 const speed = 200
@@ -103,39 +106,49 @@ const keyActions = {
     d: {
         down: (player) => player.setVelocityX(speed),
         up: (player) => player.setVelocityX(0),
+    },
+    ' ': {
+        down: () => console.log("down"),
+        up: () => console.log("up"),
     }
 }
 
 function update(){
-
-    for (let key in cursorKeys) {
-        
-        if(cursorKeys[key].isDown){
-            
-            letter = cursorKeys[key].originalEvent.key
+    
+    //parses keys
+    for (let key in movementKeys) {
+        if(movementKeys[key].isDown){
+            letter = movementKeys[key].originalEvent.key
             keyActions[letter].down(player)
         }
-        if(Phaser.Input.Keyboard.JustUp(cursorKeys[key])){
-            letter = cursorKeys[key].originalEvent.key
+        if(Phaser.Input.Keyboard.JustUp(movementKeys[key])){
+            letter = movementKeys[key].originalEvent.key
             keyActions[letter].up(player)
+        }
+    }
+    for (let key in actionKeys) {
+        if (Phaser.Input.Keyboard.JustDown(actionKeys[key])) {
+            shoot(player, this);
         }
     }
 }
 
+
 function connect() {
     //connect to firebse
-    
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             //logged in
             playerID = user.uid
             playerRef = firebase.database().ref(`players/${playerID}`)
+            //create player in database
             playerRef.set({
                 playerID,
                 x: 100,
                 y: 100,
                 name: "cole"
             })
+            //send position every 50ms
             setInterval(() => {
                 playerRef = firebase.database().ref(`players/${playerID}`)
                 playerRef.set({
@@ -179,6 +192,12 @@ async function move(player, x, y) {
     //player.x = x
     //player.y = y
 }
+
+function shoot(player, game) {
+    const entities = game.physics.add.sprite(player.x, player.y, 'player')
+
+}
+
 
 function delay(ms) {
     return new Promise( resolve => setTimeout(resolve, ms) );
