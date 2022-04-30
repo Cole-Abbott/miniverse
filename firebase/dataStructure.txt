@@ -1,0 +1,44 @@
+firebase realtime
+
+players: {
+    playerID: {
+        Name: "",
+        playerID: playerID,
+        x: float,
+        y: float
+    }
+}
+entities: {
+    playerID of parent [
+        {
+            parent: parentID,
+            x: float,
+            y: float 
+        }   
+    ]
+    
+}
+
+entities: {
+    entityID 
+    {
+        parent: parentID,
+        x: float,
+        y: float 
+    }   
+}
+
+
+client side
+
+allPlayers {
+    playerID:  phaser object of player
+}
+
+childEntities {
+    entityID: phaser object of entity
+}
+
+entities {
+    entityID: phaser object
+}

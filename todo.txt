@@ -1,12 +1,20 @@
-1: add multiplayer
 2: make map
+
 3: make more art
     -land tiles
     -decorations
     -skins
+
 4: make games
     -mini golf
     -bowling
     -bumper cars
     -laser tag
+    -shooting range
 
+5: add walking amimations
+
+
+
+-done
+1: add multiplayer 
