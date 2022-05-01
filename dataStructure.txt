@@ -4,28 +4,25 @@ players: {
     playerID: {
         Name: "",
         playerID: playerID,
-        x: float,
-        y: float
+        x: number,
+        y: number
     }
 }
-entities: {
-    playerID of parent [
-        {
-            parent: parentID,
-            x: float,
-            y: float 
-        }   
-    ]
-    
-}
-
 entities: {
     entityID 
     {
         parent: parentID,
-        x: float,
-        y: float 
+        x: number,
+        y: number 
     }   
+}
+world: {
+    shooting: {
+        station1: {
+            occupied: bool
+            angle: number
+        }
+    }
 }
 
 

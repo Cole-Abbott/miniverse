@@ -18,3 +18,6 @@
 
 -done
 1: add multiplayer 
+
+color palette:
+5bab68,c4ccb8,c4cfb4,65b1ae,5bab6a,4f5355,387080,104a96,487fc7,78868c,545d61,245da8,cfe0b6,c6868e,5390db,2e393d,4a5357

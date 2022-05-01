@@ -32,10 +32,10 @@ function preload() {
         for (let key in data) {
             if (key != playerID) {
                 //set velocity to move to setpoint and stop after 25ms
-                this.physics.moveTo(allPlayers[key], data[key].x, data[key].y, 25, 25)
-                setTimeout(() => {
-                    allPlayers[key].setVelocity(0)
-                }, 25)
+                //this.physics.moveTo(allPlayers[key], data[key].x, data[key].y, 25, 25)
+                //setTimeout(() => { allPlayers[key].setVelocity(0) }, 25)
+                allPlayers[key].x = data[key].x
+                allPlayers[key].y = data[key].y
             }
         }
     })
@@ -70,10 +70,10 @@ function preload() {
         for (let key in data) {
             if (data[key].parent != playerID) {
                 //set velocity to move to setpoint and stop after 25ms
-                this.physics.moveTo(entities[key], data[key].x, data[key].y, 25, 25)
-                setTimeout(() => {
-                    entities[key].setVelocity(0)
-                }, 25)
+                //this.physics.moveTo(entities[key], data[key].x, data[key].y, 25, 25)
+                //setTimeout(() => { entities[key].setVelocity(0)}, 25)
+                entities[key].x = data[key].x
+                entities[key].y = data[key].y
             }
         }
     })
@@ -85,6 +85,7 @@ function preload() {
         if (data.parent != playerID) {
             //add new phaser sprite to entities
             entities[data.entityID] = this.physics.add.sprite(data.x, data.y, 'bullet');
+            if ('angle' in data) {entities[data.entityID].setAngle(data.angle)}
         }
     })
 
@@ -97,26 +98,64 @@ function preload() {
     })
 
 
+    world = {}
+    //db ref for world
+    const worldRef = firebase.database().ref("world");
+
+    //runs whenever entity is updated
+    worldRef.on("value", (snapshot) =>{
+        data = snapshot.val()
+        //moves all entities to new position
+        world.shooting.gun.setAngle(data.shooting.angle)
+    })
+
     //load sprites
     this.load.image("fountain", "./sprites/fountain.png")
     this.load.image("pathDown_1", "./sprites/pathDown_1.png")
+
+    this.load.image("shootingDev", "./sprites/shootingDev.png")
+    this.load.image("shootingStandDev", "./sprites/shootingStandDev.png")
+    this.load.image("shootingGun", "./sprites/shootingGun.png")
+    
+
     this.load.image("player", "./sprites/player.png")
     this.load.image("player_blue", "./sprites/player_blue.png")
     this.load.image("bullet","./sprites/bullet.png" )
 }
 
 function create() {
-    //add background
+    const center = 1000
+    this.physics.world.setBounds(0, 0, 2*center, 2*center);
     
-    this.add.image(1000, 1000, 'fountain').setScale(4)
-    this.add.image(1000, 1512, 'pathDown_1').setScale(4)
-
-    this.physics.world.setBounds(0, 0, 2000, 2000);
 
     //add/config player
-    player = this.physics.add.sprite(1000, 1000, 'player');
-    player.setBounce(0.2);
+    player = this.physics.add.sprite(600, 1100, 'player').setDepth(1);
     player.setCollideWorldBounds(true);
+    player.gameMode = 'none'
+    player.gameArea = 'none'
+    //show debug position
+    this.text = this.add.text(10, 10).setScrollFactor(0).setFontSize(20).setColor('#ffffff').setDepth(1);
+
+    //adds hotbar
+    this.hotbar = this.add.text(400, 550).setScrollFactor(0).setFontSize(20).setColor('#ffffff').setDepth(1);
+
+    //add background
+    this.add.image(center, center, 'fountain').setScale(4)
+    this.add.image(center, center + 512, 'pathDown_1').setScale(4)
+
+    //shooting game
+    
+    world.shooting = {
+        background: this.add.image(center - 512, center, 'shootingDev').setScale(4),
+        stand: this.physics.add.image(490, 1150, 'shootingStandDev').setScale(4),
+        gun: this.physics.add.image(490, 1120, 'shootingGun').setScale(0.5).setAngle(-90)
+    }
+    
+
+    this.physics.add.overlap(player, world.shooting.stand, () => {
+        player.gameArea = 'shooting'
+    })
+
 
     this.cameras.main.setBounds(0, 0, 2000, 2000);
     this.cameras.main.startFollow(player)
@@ -130,7 +169,8 @@ function create() {
         
     });
     actionKeys = this.input.keyboard.addKeys({
-        'space': Phaser.Input.Keyboard.KeyCodes.SPACE
+        'space': Phaser.Input.Keyboard.KeyCodes.SPACE,
+        'e': Phaser.Input.Keyboard.KeyCodes.E
     })
 }
 
@@ -156,22 +196,81 @@ const keyActions = {
 }
 
 function update(){
-    //parses keys
-    for (let key in movementKeys) {
-        if(movementKeys[key].isDown){
-            letter = movementKeys[key].originalEvent.key
-            keyActions[letter].down(player)
-        }
-        if(Phaser.Input.Keyboard.JustUp(movementKeys[key])){
-            letter = movementKeys[key].originalEvent.key
-            keyActions[letter].up(player)
+    //show debug position
+    this.text.setText([player.x, player.y])
+
+    if (player.gameMode === 'none') {
+        //parses movement keys
+        for (let key in movementKeys) {
+            if(movementKeys[key].isDown){
+                letter = movementKeys[key].originalEvent.key
+                keyActions[letter].down(player)
+            }
+            if(Phaser.Input.Keyboard.JustUp(movementKeys[key])){
+                letter = movementKeys[key].originalEvent.key
+                keyActions[letter].up(player)
+            }
         }
     }
-    for (let key in actionKeys) {
-        if (Phaser.Input.Keyboard.JustDown(actionKeys[key])) {
-            shoot(player, this);
+
+
+    if (player.gameArea === 'none') this.hotbar.setText("");
+
+
+    if (player.gameArea === 'shooting') {
+        const shootingRef = firebase.database().ref("world/shooting");
+        if (player.gameMode === 'shooting'){
+            this.hotbar.setText("press e to exit")
+
+            //listen for shooting inputs, a,d to aim, space to shoot, e to exit
+            if (Phaser.Input.Keyboard.JustDown(actionKeys.e)){ 
+                player.gameMode = 'none'
+                //tell db you left game
+                shootingRef.update({
+                    occupied: false
+                })
+            }
+            if (movementKeys.left.isDown && world.shooting.gun.angle > -135) {
+                world.shooting.gun.setAngle(world.shooting.gun.angle - 2)
+                shootingRef.update({
+                    angle: world.shooting.gun.angle
+                })
+            }
+            if (movementKeys.right.isDown && world.shooting.gun.angle < -45) {
+                world.shooting.gun.setAngle(world.shooting.gun.angle + 2)
+                shootingRef.update({
+                    angle: world.shooting.gun.angle
+                })
+            }
+
+            if (Phaser.Input.Keyboard.JustDown(actionKeys.space)){ shoot(player, this, (world.shooting.gun.angle + 90) * -1) }
+            
+
+    
+
+        } else {
+            //check if station is occupied
+            //shootingRef.get().then((data) => console.log(data.val()))
+
+
+            //prompt to start game
+            this.hotbar.setText("press e to start")
+
+            if (Phaser.Input.Keyboard.JustDown(actionKeys.e)) {
+                player.gameMode = 'shooting';
+                player.x = 490
+                player.y = 1133
+                player.setVelocity(0)
+                //tell db you entered game
+                shootingRef.update({
+                    occupied: playerID
+                })
+            }
         }
     }
+    
+    
+    player.gameArea = 'none'
 }
 
 function connect() {
@@ -205,7 +304,7 @@ function connect() {
                 //send entity data for child entities
                 for (let entityID in childEntities) {
                     dbRef =  firebase.database().ref(`entities/${entityID}`);
-                    dbRef.set({
+                    dbRef.update({
                         entityID,
                         parent: playerID,
                         x: childEntities[entityID].x,
@@ -229,7 +328,7 @@ function connect() {
     return
 }
 
-function shoot(player, game) {
+function shoot(player, game, angle) {
     //make entity ID
     const entityID = Math.random().toString(36).substring(2, 16)
 
@@ -240,6 +339,7 @@ function shoot(player, game) {
     entity = game.physics.add.sprite(player.x, player.y, 'bullet'),
     entity.setCollideWorldBounds(true)
     entity.setBounce(1)
+    entity.setAngle(-angle)
 
     childEntities[entityID] = entity
     //add entity to childEntities
@@ -248,11 +348,13 @@ function shoot(player, game) {
     dbRef.set({
         x: entity.x,
         y: entity.y,
+        angle: -angle,
         parent: playerID,
         entityID
     })
-    entity.setVelocity(player.body.velocity.x * 1.5, player.body.velocity.y * 1.5)
-    
+
+    entity.setVelocity(-Math.sin(angle * (Math.PI / 180)) * 200, -Math.cos(angle * (Math.PI / 180)) * 200)
+
     //delete bullet after 2 seconds
     setTimeout(() => {
         dbRef.remove();
