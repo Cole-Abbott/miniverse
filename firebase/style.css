@@ -1,0 +1,5 @@
+canvas{
+    position: absolute /*relative and fixed elements also works*/;
+    top: 0;
+    left: 0;
+  }

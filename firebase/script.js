@@ -1,8 +1,8 @@
 var config = {
     type: Phaser.AUTO,
     pixelArt: true,
-    width: 800,
-    height: 600,
+    width: window.innerWidth,
+    height: window.innerHeight,
     physics: {
         default: 'arcade',
     },
@@ -107,20 +107,23 @@ function preload() {
         data = snapshot.val()
         //moves all entities to new position
         world.shooting.gun.setAngle(data.shooting.angle)
+        world.shooting.gun.occupied = data.shooting.occupied
     })
 
     //load sprites
     this.load.image("fountain", "./sprites/fountain.png")
     this.load.image("pathDown_1", "./sprites/pathDown_1.png")
-
+    this.load.image("pathLeft_1", "./sprites/pathLeft_1.png")
+    
     this.load.image("shootingDev", "./sprites/shootingDev.png")
-    this.load.image("shootingStandDev", "./sprites/shootingStandDev.png")
-    this.load.image("shootingGun", "./sprites/shootingGun.png")
+    this.load.image("shootingStandDev", "./sprites/shooting/stand.png")
+    this.load.image("shootingGun", "./sprites/shooting/gun.png")
+    this.load.image("target", "./sprites/shooting/target.png")
+    this.load.image("bullet","./sprites/shooting/bullet.png" )
     
 
     this.load.image("player", "./sprites/player.png")
     this.load.image("player_blue", "./sprites/player_blue.png")
-    this.load.image("bullet","./sprites/bullet.png" )
 }
 
 function create() {
@@ -142,13 +145,19 @@ function create() {
     //add background
     this.add.image(center, center, 'fountain').setScale(4)
     this.add.image(center, center + 512, 'pathDown_1').setScale(4)
+    this.add.image(center - 512, center, 'pathLeft_1').setScale(4)
 
     //shooting game
     
     world.shooting = {
-        background: this.add.image(center - 512, center, 'shootingDev').setScale(4),
-        stand: this.physics.add.image(490, 1150, 'shootingStandDev').setScale(4),
-        gun: this.physics.add.image(490, 1120, 'shootingGun').setScale(0.5).setAngle(-90)
+        background: this.add.image(center - 512, center - 512, 'shootingDev').setScale(4),
+        stand: this.physics.add.image(490, 638, 'shootingStandDev').setScale(4),
+        gun: this.physics.add.image(490, 608, 'shootingGun').setScale(0.5).setAngle(-90),
+        targets: [
+            this.physics.add.image(440, 388, 'target').setScale(1), 
+            this.physics.add.image(490, 388, 'target').setScale(1), 
+            this.physics.add.image(540, 388, 'target').setScale(1)
+        ] 
     }
     
 
@@ -249,17 +258,14 @@ function update(){
     
 
         } else {
-            //check if station is occupied
-            //shootingRef.get().then((data) => console.log(data.val()))
-
-
+            
             //prompt to start game
             this.hotbar.setText("press e to start")
 
-            if (Phaser.Input.Keyboard.JustDown(actionKeys.e)) {
+            if (Phaser.Input.Keyboard.JustDown(actionKeys.e) && !world.shooting.gun.occupied) {
                 player.gameMode = 'shooting';
                 player.x = 490
-                player.y = 1133
+                player.y = 621
                 player.setVelocity(0)
                 //tell db you entered game
                 shootingRef.update({
@@ -355,10 +361,25 @@ function shoot(player, game, angle) {
 
     entity.setVelocity(-Math.sin(angle * (Math.PI / 180)) * 200, -Math.cos(angle * (Math.PI / 180)) * 200)
 
+    const deleteEntity = (entityID) => {
+        if (childEntities[entityID]){
+            dbRef.remove();
+            childEntities[entityID].destroy()
+            delete childEntities[entityID]
+            entity = null
+        }
+    }
+
+    //add colider to targets
+    game.physics.add.overlap(entity, world.shooting.targets, () => {
+        deleteEntity(entityID)
+        
+    })
+
+
     //delete bullet after 2 seconds
     setTimeout(() => {
-        dbRef.remove();
-        childEntities[entityID].destroy()
-        delete childEntities[entityID]
+        deleteEntity(entityID)
     }, 2000);
+
 }
